@@ -206,13 +206,18 @@ def main():
     if a.tracks:traces=json.loads(a.tracks.read_text(encoding='utf8'))
     else:
         path=a.calibration or a.video.with_suffix('.calibration.json')
-        if not path.exists():
-            def parse(s):return [float(x) for x in s.split(',') if x.strip()]
-            if not (a.shot_times or a.kite_times):
-                ap.error('Need --calibration or --shot-times/--kite-times to seed object tracking')
-            seeds=calibrate(a.video,parse(a.shot_times),parse(a.kite_times))
+        seeds=json.loads(path.read_text(encoding='utf8')) if path.exists() else {'skillshots':[],'kiting_windows':[]}
+        def parse(s):return [float(x) for x in s.split(',') if x.strip()]
+        shots=[t for t in parse(a.shot_times) if not any(abs(t-float(x['at']))<0.05 for x in seeds.get('skillshots',[]))]
+        kites=[t for t in parse(a.kite_times) if not any(abs(t-float(x['at']))<0.05 for x in seeds.get('kiting_windows',[]))]
+        if shots or kites:
+            extra=calibrate(a.video,shots,kites)
+            seeds['skillshots'].extend(extra['skillshots'])
+            seeds['kiting_windows'].extend(extra['kiting_windows'])
             path.write_text(json.dumps(seeds,indent=2),encoding='utf8')
-        traces=process_video(a.video,json.loads(path.read_text(encoding='utf8')))
+        if not seeds.get('skillshots') and not seeds.get('kiting_windows'):
+            ap.error('Need calibration or --shot-times/--kite-times to seed object tracking')
+        traces=process_video(a.video,seeds)
     report=classify(traces)
     dest=a.output or (a.video or a.tracks).with_suffix('.mechanics.json')
     dest.write_text(json.dumps(report,indent=2),encoding='utf8')

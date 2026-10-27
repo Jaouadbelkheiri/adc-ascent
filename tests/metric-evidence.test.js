@@ -1,0 +1,6 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');
+const ctx={window:{},globalThis:{}};vm.runInNewContext(fs.readFileSync('data.js','utf8'),ctx);vm.runInNewContext(fs.readFileSync('metric-engine.js','utf8'),ctx);
+const api=ctx.window.ADC_EVIDENCE;
+test('all 45 metrics have a declared evidence source and limitations',()=>{assert.equal(api.RULES.length,45);assert.equal(new Set(api.RULES.map(x=>x.id)).size,45);for(const m of api.RULES){assert.ok(m.required&&m.limitation)}});
+test('all reports are unverified and never auto-award mastery points',()=>{const rows=api.summarize([{events:[{kind:'skillshot',status:'dodge_candidate'}]}],[{cs:220,duration:30}]);assert.equal(rows.length,45);assert.equal(rows.find(r=>r.id==='MEC-03.2').value.numerator,1);assert.equal(rows.find(r=>r.id==='MEC-01.1').value.number,7.33);assert.ok(rows.every(r=>r.masteryScore===null&&r.certified===false))});
+test('invalid mechanics schema rejected',()=>{assert.equal(api.validateReport({schema:'other',events:[]}),false);assert.equal(api.validateReport({schema:'adc-ascent.mechanics.v1',events:[{kind:'skillshot',status:'uncertain'}]}),true)});

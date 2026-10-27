@@ -1,0 +1,7 @@
+name = "adc-ascent-riot-proxy"
+main = "riot-proxy.js"
+compatibility_date = "2026-10-01"
+# Only permit your own deployed origin, localhost dev origin, and file:// (`null`) if using local desktop.
+[vars]
+ALLOWED_ORIGINS = "https://your-adc-ascent-site.example,http://localhost:8080,http://127.0.0.1:8080,null"
+# Set secrets with `npx wrangler secret put RIOT_API_KEY` and `npx wrangler secret put ADC_ACCESS_TOKEN`.

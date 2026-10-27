@@ -1,0 +1,45 @@
+{
+  "name": "adc-ascent",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Standalone ADC improvement and match recording companion",
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "test": "node --test tests/*.test.js",
+    "web": "python -m http.server 8080",
+    "dist:win": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "gg.adcascent.desktop",
+    "productName": "ADC ASCENT",
+    "asar": true,
+    "files": [
+      "index.html",
+      "app.js",
+      "data.js",
+      "styles.css",
+      "sw.js",
+      "manifest.webmanifest",
+      "icon.svg",
+      "teamfights.js",
+      "capture-ui.js",
+      "desktop/**/*",
+      "package.json",
+      "mechanics-ui.js",
+      "metric-engine.js",
+      "vision/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  }
+}

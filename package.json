@@ -34,7 +34,8 @@
       "mechanics-ui.js",
       "metric-engine.js",
       "vision/**/*",
-      "metric-scoring.js"
+      "metric-scoring.js",
+      "scoring-ui.js"
     ],
     "win": {
       "target": [

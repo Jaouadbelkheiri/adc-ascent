@@ -6,3 +6,5 @@ test('aggregation tracks valid sample and preserves missing evidence',()=>{const
 test('comparison only produces deltas after minimum samples',()=>{const games=A.select(Array.from({length:20},(_,i)=>match(i)),{});const c=A.compare(games);assert.equal(c.comparable,true);assert.equal(c.deltas.goldPerMinute,0);assert.equal(A.compare(games.slice(0,8)).deltas.goldPerMinute,null);});
 test('early-game statistics show no invented value',()=>{const m=A.norm(match(1));assert.equal(m.csAt10,null);assert.equal(A.aggregate([m]).csAt10,null);assert.equal(A.evidence([m]).find(x=>x.key==='csAt10').available,0);});
 test('insights are descriptive not forced performance ratings',()=>{const s=A.insights([]);assert.match(s[0].text,/Import at least five/);assert.equal('rating' in s[0],false);});
+
+test('imported match retains local record identifier for detail modal',()=>{const m=match(1,{id:'local-777',riotMatchId:'EUW1_123'});const rec=A.norm(m);assert.equal(rec.id,'local-777');assert.equal(rec.riotMatchId,'EUW1_123');});

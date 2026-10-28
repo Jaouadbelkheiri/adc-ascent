@@ -1,0 +1,7 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const ctx={window:{}};vm.runInNewContext(fs.readFileSync('data.js','utf8'),ctx);vm.runInNewContext(fs.readFileSync('metric-scoring.js','utf8'),ctx);
+const s=ctx.window.ADC_SCORING;
+test('45 metric rubrics, 15 components, 5 attributes',()=>{let r=s.scoreAll([]);assert.equal(r.metrics.length,45);assert.equal(r.components.length,15);assert.equal(r.attributes.length,5);assert.equal(r.scored_metrics,0);});
+test('unverified candidates cannot promote',()=>{let a=Array.from({length:20},(_,i)=>({metric_id:'MEC-03.2',evidence_id:'e'+i,session_id:'s'+i,difficulty:4,eligible:true,quality:4,source:'automatic_visual_detector',review_status:'pending'}));assert.equal(s.scoreMetric('MEC-03.2',a).highest_qualified_tier,null);});
+test('approved evidence can satisfy D, but not C',()=>{let a=Array.from({length:10},(_,i)=>({metric_id:'MEC-03.2',evidence_id:'e'+i,session_id:'s'+i%2,difficulty:2,eligible:true,quality:i<8?4:1,source:'calibrated_review',review_status:'approved'}));assert.equal(s.scoreMetric('MEC-03.2',a).highest_qualified_tier,'D');});
+test('duplicate evidence does not satisfy a gate',()=>{let a=Array.from({length:20},()=>({metric_id:'MEC-03.2',evidence_id:'one',session_id:'s',difficulty:2,eligible:true,quality:4,source:'verified_drill',review_status:'approved'}));assert.equal(s.scoreMetric('MEC-03.2',a).highest_qualified_tier,null);});

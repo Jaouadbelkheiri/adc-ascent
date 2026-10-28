@@ -30,6 +30,32 @@ ipcMain.handle('recording:open',async(_e,name)=>{const safe=path.basename(String
 ipcMain.handle('recording:add-markers',async(_e,filename,markers)=>{const name=path.basename(String(filename));if(!name.endsWith('.webm'))throw Error('Invalid recording');if(!Array.isArray(markers)||markers.length>1000)throw Error('Invalid markers');const file=path.join(root(),name+'.json');const meta=JSON.parse(await fsp.readFile(file,'utf8'));meta.markers=[...(meta.markers||[]),...markers.map(m=>({atSeconds:Math.max(0,Number(m.atSeconds)||0),label:String(m.label||'Teamfight candidate').slice(0,160),source:'timeline_heuristic'}))];await fsp.writeFile(file,JSON.stringify(meta,null,2));return meta.markers;});
 ipcMain.handle('recording:clip',async(_e,name,startSeconds,endSeconds)=>{const base=path.basename(String(name));if(!base.endsWith('.webm'))throw Error('Invalid file');const start=Math.max(0,Number(startSeconds)||0),end=Number(endSeconds);if(!Number.isFinite(end)||end<=start||end-start>300)throw Error('Clip duration must be between 0 and 300 seconds');await ensureFolder();const dest=path.join(root(),safeFile(base.slice(0,-5))+`_clip_${Math.round(start)}_${Math.round(end)}.webm`);return await new Promise((resolve,reject)=>{const ff=spawn('ffmpeg',['-nostdin','-hide_banner','-loglevel','error','-y','-ss',String(start),'-i',path.join(root(),base),'-t',String(end-start),'-c','copy',dest],{windowsHide:true});let error='';ff.stderr.on('data',d=>error+=d.toString());ff.on('error',()=>reject(Error('FFmpeg is required for clip export. Install FFmpeg and add it to PATH.')));ff.on('exit',code=>code===0?resolve({filename:path.basename(dest)}):reject(Error('Clip export failed: '+error.slice(-250))));});});
 
+
+/* Automatic post-game heuristic scan; candidate review, no in-game memory access. */
+ipcMain.handle('analysis:auto',async(_e,name,options={})=>{
+ const base=path.basename(String(name||''));
+ if(!base.endsWith('.webm')||base!==name)throw Error('Select a saved WebM recording');
+ const video=path.join(root(),base);
+ await fsp.access(video);
+ const seconds=Math.max(1,Math.min(900,Math.floor(Number(options.maxSeconds)||120)));
+ const script=path.join(__dirname,'..','vision','autonomous.py');
+ const py=process.platform==='win32'?'py':'python3';
+ const args=process.platform==='win32'?['-3',script]:[script];
+ args.push('--video',video,'--max-seconds',String(seconds));
+ return new Promise((resolve,reject)=>{
+  const child=spawn(py,args,{windowsHide:true,stdio:['ignore','pipe','pipe']});
+  let output='',error='';
+  child.stdout.on('data',d=>output=(output+d.toString()).slice(-10000));
+  child.stderr.on('data',d=>error=(error+d.toString()).slice(-10000));
+  child.once('error',e=>reject(Error('Python 3 + OpenCV required: '+e.message)));
+  child.once('exit',async code=>{
+   if(code!==0)return reject(Error('Auto scan failed: '+error.slice(-1000)));
+   try{const parsed=JSON.parse(output.trim());resolve(JSON.parse(await fsp.readFile(parsed.report,'utf8')))}
+   catch(e){reject(Error('Bad scan report: '+e.message))}
+  });
+ });
+});
+
 /* Post-game seeded computer-vision analysis; never during a running match. */
 ipcMain.handle('analysis:run',async(_e,name,options={})=>{
  const safe=path.basename(String(name||''));

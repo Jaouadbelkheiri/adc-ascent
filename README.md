@@ -1,6 +1,26 @@
-# ADC ASCENT — Standalone ADC Training & Replay Studio (v0.3)
+# ADC ASCENT — Standalone ADC Training & Replay Studio (v0.5)
 
 Independent **personal** League of Legends ADC development app. Not integrated with ARISE, not affiliated with Riot Games, and not a clone of Replay.gg or Mobalytics.
+
+## Automatic match detection and 45-metric evidence (v0.5)
+
+ADC ASCENT can **automatically import your completed ADC games while the Windows companion is running**, including games played before installing it where match-v5 still makes the history available. It imports player statistics, available Riot challenge counters, 10- and 15-minute timeline snapshots, and teamfight review candidates. It automatically deduplicates records by Riot match ID and gradually paginates older history. Newest games are checked every **three minutes**; backfill processes another page per poll, respecting Riot's rate limits. This does not imply that every historically played match exists on Riot's API.
+
+**One-time setup (required):**
+
+1. Register your own Riot API product and obtain a valid personal or production key. A development key may expire. This project contains no Riot credentials.
+2. Configure and deploy the Cloudflare Worker in `worker/` using `wrangler.toml.example`; set secrets with `npx wrangler secret put RIOT_API_KEY` and `npx wrangler secret put ADC_ACCESS_TOKEN`. Never put a Riot key in the desktop app or browser.
+3. Start the **Windows** application (`npm install`, `npm start`). In **Capture Studio → Match Sync**, enter `RiotName#Tag`, platform, your HTTPS Worker base URL, and the private `ADC_ACCESS_TOKEN`. Check **Automatically sync completed matches**, then click **Save & enable sync**.
+4. Leave the desktop companion running. Matches import automatically in the background after they appear on Riot's match-v5 API. Use **Sync now** or **Backfill history** for manual checks. You can disconnect and delete the stored token from Capture Studio.
+5. Open **Performance Insights → Match Intelligence & Evidence Coverage**. All 45 metrics are listed. Supported Riot statistics appear automatically. Metrics without trustworthy measurements are explicitly labeled as requiring VOD or controlled assessment.
+
+The desktop stores your private proxy bearer token encrypted using Electron's OS `safeStorage` (Windows DPAPI). It refuses persistent configuration if OS encryption is unavailable. The renderer never receives the persisted token. This is **not** Riot Sign On, and it does not ask for or store your Riot password. Auto-sync requires a deployed Worker and valid credentials; merely cloning the repository cannot activate it.
+
+**Scope and evidence integrity:** Riot `skillshotsDodged`, CS/min, damage/min, gold/min, vision score/min, deaths/10min, and lane checkpoints are genuine post-game indicators when available, **not** measurements of dodge success rate, correct spacing, wave decisions, or all 45 tactical skills. The 45-metric table indicates measured / not reported / VOD-required and does **not** fabricate grades, confidence, or verified F → Monarch certifications. No API exists that automatically and reliably certifies all 45 skills. Some visual mechanics can be analyzed from user-recorded video, but require better validated models and proper player context.
+
+**Optional post-game recording analysis:** In Capture Studio, enable **Auto-analyze recorded gameplay when it ends**. After you manually authorize game-window recording and stop, the companion runs the experimental projectile-candidate scanner over up to the first 10 minutes, then sends the resulting unverified events to Mechanics Lab. Unattended game-window capture still requires explicit screen-sharing authorization; the app cannot silently start screen recording. If Python/OpenCV isn't installed, recording still succeeds but video analysis fails with a diagnostic. Vision candidate detection is not validated dodge/kiting scoring.
+
+**Safety:** Analysis happens after the match, with no injection or game-memory scraping. The private Worker requires a bearer token and CORS restrictions; do not deploy an open public data proxy. Do not share tokens or `.webm` recordings publicly. Video analysis and input-APM functionality have not been verified against a real Windows League installation in this environment.
 
 ## What's implemented
 
@@ -54,7 +74,7 @@ Open **Capture Studio** while a League match is running. Choose optional system 
 2. In `worker/`, copy `wrangler.toml.example` to `wrangler.toml`.
 3. Run `npx wrangler secret put RIOT_API_KEY` and `npx wrangler secret put ADC_ACCESS_TOKEN` (choose a long unique token).
 4. Run `npx wrangler deploy` from `worker/` (or `npx wrangler deploy --config worker/wrangler.toml` from this folder).
-5. In **Capture Studio**, enter your Worker HTTPS URL, Riot ID and the personal access token. Only the Worker sees `RIOT_API_KEY`. The access token is held in the capture form, not in a backup. Riot sync is read-only and loads up to ten matches and fight candidates from up to three recent ADC games.
+5. In **Capture Studio**, enter your Worker HTTPS URL, Riot ID and the personal access token. Only the Worker sees `RIOT_API_KEY`. The access token is held in the capture form, not in a backup. Riot sync is read-only, fetches up to ten match IDs per page with timelines for eligible ADC matches, and progressively backfills history.
 
 A public deployment needs an authentication, rate-limiting and access-control review beyond this single-user bearer-token proxy. Riot's public/development key limits and policies apply; never commit secrets.
 
@@ -118,3 +138,9 @@ python vision/analyze.py --tracks vision/example-tracks.json
 The input detector requires temporal `player`, `projectile`, and optional `enemy` observations in screen coordinates. See `vision/example-tracks.json`. Without validated, patch-aware models trained to recognize League champion/projectile/attack animations across many champions, reliable end-to-end automatic dodging and all 45 skill scores are **not yet possible**. The master metric coverage matrix therefore uses `telemetry`, `candidate`, `proxy`, or `needs review`, and **never automatically updates ranked mastery**.
 
 Run automated checks with `npm test` and `python -m unittest discover -s vision -p test_analyze.py`.
+
+## Experimental autonomous mechanical analysis (v0.4)
+
+Open **Capture Studio → Auto-scan projectile candidates** after recording. The scanner runs locally on up to two minutes of footage and imports low-confidence visual motion candidates into Mechanics Lab. It no longer requires a manual projectile timestamp for *candidate discovery*. It does **not** know every spell's collision box, distinguish all VFX, or automatically certify a dodge. See [`vision/README_AUTOMATION.md`](vision/README_AUTOMATION.md) for the CLI and limitations.
+
+`vision/attack_kiting.py` introduces attack-aware interval analysis from timestamped, provenance-labelled attack events (rather than only separation). It does not yet autonomously identify confirmed basic attacks in arbitrary footage. `metric-scoring.js` calculates F → Monarch gate qualification across all 45 metrics from eligible, reviewed evidence while preserving missing/unverified status; it does not conjure the missing observations.

@@ -1,6 +1,6 @@
 {
   "name": "adc-ascent",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Standalone ADC improvement and match recording companion",
   "main": "desktop/main.js",
@@ -35,7 +35,9 @@
       "metric-engine.js",
       "vision/**/*",
       "metric-scoring.js",
-      "scoring-ui.js"
+      "scoring-ui.js",
+      "match-intelligence.js",
+      "intelligence-ui.js"
     ],
     "win": {
       "target": [

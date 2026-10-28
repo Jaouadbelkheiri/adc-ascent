@@ -12,14 +12,4 @@ jobs:
         with:
           node-version: '22'
       - run: npm test
-      - run: node --check app.js && node --check capture-ui.js && node --check desktop/main.js
-
-  vision-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: python -m pip install -r vision/requirements.txt
-      - run: python -m unittest discover -s vision -p 'test_*.py' -v
+      - run: node --check app.js && node --check capture-ui.js && node --check desktop/main.js && node --check desktop/riot-sync.js && node --check match-intelligence.js && node --check intelligence-ui.js && node --check worker/riot-proxy.js

@@ -1,0 +1,13 @@
+'use strict';
+const {test}=require('node:test');const assert=require('node:assert/strict');
+const {pathToFileURL}=require('node:url');const path=require('node:path');
+const mod=import(pathToFileURL(path.join(__dirname,'../worker/public-api.mjs')).href);
+const base='https://api.example/api/profile?riotId=An%20ADC%23EUW&region=EUW1';
+const req=(url=base)=>new Request(url,{headers:{'CF-Connecting-IP':'203.0.113.5'}});
+const mock=async url=>{if(url.includes('/accounts/by-riot-id/'))return new Response(JSON.stringify({puuid:'PUUID',gameName:'An ADC',tagLine:'EUW'}),{status:200});if(url.includes('/summoners/by-puuid/'))return new Response(JSON.stringify({summonerLevel:199}),{status:200});if(url.includes('/entries/by-puuid/'))return new Response(JSON.stringify([{queueType:'RANKED_SOLO_5x5',tier:'EMERALD',rank:'IV',leaguePoints:61,wins:31,losses:28}]),{status:200});if(url.includes('/ids?'))return new Response(JSON.stringify([]),{status:200});throw Error('Unexpected '+url);};
+const enabled={RIOT_API_KEY:'TEST-SERVER-ONLY',PUBLIC_SEARCH_ENABLED:'true',SEARCH_RATE_LIMITER:{limit:async()=>({success:true})}};
+test('disabled backend never calls Riot',async()=>{const {createHandler}=await mod;let called=false;const resp=await createHandler({fetchImpl:()=>{called=true;throw Error('should not call');}})(req(),{});assert.equal(resp.status,503);assert.equal(called,false);});
+test('valid profile resolves Riot ID with server-side key',async()=>{const {createHandler}=await mod;const resp=await createHandler({fetchImpl:mock})(req(),enabled);assert.equal(resp.status,200);const data=await resp.json();assert.equal(data.summonerLevel,199);assert.equal(data.ranked[0].tier,'EMERALD');assert.equal(JSON.stringify(data).includes('TEST-SERVER-ONLY'),false);});
+test('profile input is validated before Riot call',async()=>{const {createHandler}=await mod;const resp=await createHandler({fetchImpl:mock})(req('https://api.example/api/profile?riotId=broken&region=EUW1'),enabled);assert.equal(resp.status,400);});
+test('rate limiting protects Riot backend',async()=>{const {createHandler}=await mod;const resp=await createHandler({fetchImpl:mock})(req(),{...enabled,SEARCH_RATE_LIMITER:{limit:async()=>({success:false})}});assert.equal(resp.status,429);});
+test('match results compatible with app import shape',async()=>{const {createHandler}=await mod;const resp=await createHandler({fetchImpl:mock})(req(base.replace('/api/profile','/api/matches')),enabled);assert.equal(resp.status,200);const data=await resp.json();assert.deepEqual(data.matches,[]);assert.equal(data.requestedStart,0);assert.deepEqual(data.timelineCandidates,[]);});

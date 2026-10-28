@@ -1,0 +1,20 @@
+name = "adc-ascent-api"
+main = "public-api.mjs"
+compatibility_date = "2026-10-21"
+
+# Do not turn this on for unrestricted public traffic with a Riot development/personal key.
+[vars]
+PUBLIC_SEARCH_ENABLED = "false"
+ALLOWED_ORIGINS = "http://localhost:8080,http://127.0.0.1:8080,null"
+
+[[ratelimits]]
+name = "SEARCH_RATE_LIMITER"
+namespace_id = "10029"
+[ratelimits.simple]
+limit = 12
+period = 60
+
+# After Riot approves suitable API access:
+# 1. npx wrangler secret put RIOT_API_KEY --config wrangler.public.toml
+# 2. Set PUBLIC_SEARCH_ENABLED=true and allowed origins to only your UI origin.
+# 3. Deploy and verify /health and a real profile lookup.

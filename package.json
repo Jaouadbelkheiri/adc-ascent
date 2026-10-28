@@ -1,6 +1,6 @@
 {
   "name": "adc-ascent",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "description": "Standalone ADC improvement and match recording companion",
   "main": "desktop/main.js",
@@ -41,7 +41,8 @@
       "scoring-ui.js",
       "match-intelligence.js",
       "intelligence-ui.js",
-      "desktop/riot-direct.js"
+      "desktop/riot-direct.js",
+      "profile-search-ui.js"
     ],
     "win": {
       "target": [

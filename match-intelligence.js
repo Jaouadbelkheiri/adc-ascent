@@ -48,6 +48,22 @@ function coverage(matches=[]){
  return {id:m.id,name:m.name,attribute:m.attribute,component:m.component,status:values.length?'automatically_measured':spec?'awaiting_riot_data':'requires_vod_or_trial',source:values.length?'riot_match_v5':'none',signal:spec?spec[1]:null,interpretation:spec?spec[2]:'No reliable Riot API measurement of this decision; requires VOD, drills, or calibrated review.',sampleCount:values.length,latest:recent};});
  return {schema:'adc-ascent.automatic-coverage.v1',total:rows.length,measured:rows.filter(x=>x.status==='automatically_measured').length,needsReview:rows.filter(x=>x.status==='requires_vod_or_trial').length,rows};
 }
+/** Role-specific trend reports: descriptive, not a hidden skill rating. */
+function summary(records=[]){
+ const all=records.filter(m=>m?.source==='riot_api').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+ const adc=all.filter(m=>m.isADC!==false);
+ const newest=adc.slice(0,10),previous=adc.slice(10,20);
+ const mean=(a,select)=>{const nums=a.map(select).filter(isNumber);return nums.length?Math.round(nums.reduce((x,y)=>x+y,0)*100/nums.length)/100:null};
+ const sample=(a)=>({games:a.length,winRate:a.length?Math.round(a.filter(m=>m.win).length*1000/a.length)/10:null,csPerMinute:mean(a,m=>m.signals?.csPerMinute),goldPerMinute:mean(a,m=>m.signals?.goldPerMinute),damagePerMinute:mean(a,m=>m.signals?.damagePerMinute),deathsPer10:mean(a,m=>m.signals?.deathsPer10),skillshotsDodgedPerGame:mean(a,m=>m.signals?.skillshotsDodged)});
+ const byChampion=[...new Set(adc.map(m=>m.champion))].map(champion=>({champion,...sample(adc.filter(m=>m.champion===champion))})).sort((a,b)=>b.games-a.games);
+ const a=sample(newest),b=sample(previous),changes={};
+ if(newest.length>=5&&previous.length>=5){for(const key of ['csPerMinute','goldPerMinute','damagePerMinute','deathsPer10'])if(isNumber(a[key])&&isNumber(b[key]))changes[key]=Math.round((a[key]-b[key])*100)/100;}
+ const reviewPrompts=[];
+ if(isNumber(changes.csPerMinute)&&changes.csPerMinute<-.4)reviewPrompts.push('CS/min has decreased relative to your previous games. Review available farming opportunities; raw CS/min does not prove poor last-hitting.');
+ if(isNumber(changes.deathsPer10)&&changes.deathsPer10>.25)reviewPrompts.push('Deaths per 10 minutes increased. Review positioning and decisions before the deaths rather than assuming each was avoidable.');
+ if(!reviewPrompts.length)reviewPrompts.push('Select a match and review a lane decision, a midgame rotation, and a teamfight entry. Stats alone do not assess decision quality.');
+ return {totalMatches:all.length,adcMatches:adc.length,otherRoles:all.length-adc.length,recent:a,previous:b,changes,byChampion,reviewPrompts};
+}
 function updateRecord(record,match){const e=extract(match);return {...record,signals:e.signals,patch:e.patch,queueId:e.queueId,source:'riot_api'};}
-return Object.freeze({SIGNALS,extract,coverage,updateRecord});
+return Object.freeze({SIGNALS,extract,coverage,summary,updateRecord});
 });

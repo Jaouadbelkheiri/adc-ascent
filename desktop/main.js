@@ -22,6 +22,7 @@ app.whenReady().then(()=>{createWindow();riotService=createService({userData:app
 ipcMain.handle('riot:config',()=>riotService?.status()||{configured:false});
 ipcMain.handle('riot:configure',(_e,config)=>riotService.configure(config));
 ipcMain.handle('riot:sync-now',(_e,opts)=>riotService.sync(opts||{}));
+ipcMain.handle('riot:lookup',(_e,opts)=>riotService.lookup(opts||{}));
 ipcMain.handle('riot:disable',()=>riotService.disable());
 ipcMain.handle('recorder:game-running',async()=>{const sources=await desktopCapturer.getSources({types:['window'],thumbnailSize:{width:1,height:1}});return sources.some(s=>/league of legends(\.exe)?/i.test(s.name)&&!/client/i.test(s.name));});
 ipcMain.handle('recorder:status',()=>({desktop:true,recording:!!capture,apmEnabled:!!apm,folder:root()}));

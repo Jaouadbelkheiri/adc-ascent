@@ -33,8 +33,8 @@ export default {async fetch(request,env){const h=headers(request,env);if(request
  for(const id of ids){
   const m=await riot(`https://${route}.api.riotgames.com/lol/match/v5/matches/${encodeURIComponent(id)}`,key);
   const own=m.info?.participants?.find(p=>p.puuid===acct.puuid);
-  if(!bottom(own)||Number(m.info?.gameDuration||0)<300)continue;
-  const entry={metadata:{matchId:m.metadata?.matchId},info:{participants:[own],gameDuration:m.info?.gameDuration,gameCreation:m.info?.gameCreation,gameEndTimestamp:m.info?.gameEndTimestamp,gameVersion:m.info?.gameVersion,queueId:m.info?.queueId,gameMode:m.info?.gameMode,teamKills:m.info?.participants?.filter(p=>p.teamId===own.teamId).reduce((s,p)=>s+Number(p.kills||0),0)}};
+  if(!own||Number(m.info?.gameDuration||0)<300)continue;
+  const entry={metadata:{matchId:m.metadata?.matchId},info:{participants:[own],gameDuration:m.info?.gameDuration,gameCreation:m.info?.gameCreation,gameEndTimestamp:m.info?.gameEndTimestamp,gameVersion:m.info?.gameVersion,queueId:m.info?.queueId,gameMode:m.info?.gameMode,isADC:!!bottom(own),role:own.teamPosition||own.individualPosition||'UNKNOWN',teamKills:m.info?.participants?.filter(p=>p.teamId===own.teamId).reduce((s,p)=>s+Number(p.kills||0),0)}};
   try{const timeline=await riot(`https://${route}.api.riotgames.com/lol/match/v5/matches/${encodeURIComponent(id)}/timeline`,key);
    entry.timelineSummary=summarizeTimeline(timeline,own.participantId);
    for(const c of candidates(timeline))timelineCandidates.push({...c,matchId:id});

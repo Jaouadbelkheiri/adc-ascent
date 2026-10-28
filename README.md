@@ -1,20 +1,23 @@
-# ADC ASCENT — Standalone ADC Training & Replay Studio (v0.5)
+# ADC ASCENT — Standalone ADC Training & Replay Studio (v0.6)
 
 Independent **personal** League of Legends ADC development app. Not integrated with ARISE, not affiliated with Riot Games, and not a clone of Replay.gg or Mobalytics.
 
-## Automatic match detection and 45-metric evidence (v0.5)
+## Automatic match detection and 45-metric evidence (v0.6)
 
-ADC ASCENT can **automatically import your completed ADC games while the Windows companion is running**, including games played before installing it where match-v5 still makes the history available. It imports player statistics, available Riot challenge counters, 10- and 15-minute timeline snapshots, and teamfight review candidates. It automatically deduplicates records by Riot match ID and gradually paginates older history. Newest games are checked every **three minutes**; backfill processes another page per poll, respecting Riot's rate limits. This does not imply that every historically played match exists on Riot's API.
+ADC ASCENT can **automatically import your completed matches while the Windows companion is running**, including games played before installing it where match-v5 still makes the history available. It imports player statistics, available Riot challenge counters, 10- and 15-minute timeline snapshots, and teamfight review candidates. It automatically deduplicates records by Riot match ID and gradually paginates older history. Newest games are checked every **three minutes**; backfill processes another page per poll, respecting Riot's rate limits. This does not imply that every historically played match exists on Riot's API.
 
-**One-time setup (required):**
+**One-time setup — recommended personal desktop mode (no proxy required):**
 
-1. Register your own Riot API product and obtain a valid personal or production key. A development key may expire. This project contains no Riot credentials.
-2. Configure and deploy the Cloudflare Worker in `worker/` using `wrangler.toml.example`; set secrets with `npx wrangler secret put RIOT_API_KEY` and `npx wrangler secret put ADC_ACCESS_TOKEN`. Never put a Riot key in the desktop app or browser.
-3. Start the **Windows** application (`npm install`, `npm start`). In **Capture Studio → Match Sync**, enter `RiotName#Tag`, platform, your HTTPS Worker base URL, and the private `ADC_ACCESS_TOKEN`. Check **Automatically sync completed matches**, then click **Save & enable sync**.
-4. Leave the desktop companion running. Matches import automatically in the background after they appear on Riot's match-v5 API. Use **Sync now** or **Backfill history** for manual checks. You can disconnect and delete the stored token from Capture Studio.
-5. Open **Performance Insights → Match Intelligence & Evidence Coverage**. All 45 metrics are listed. Supported Riot statistics appear automatically. Metrics without trustworthy measurements are explicitly labeled as requiring VOD or controlled assessment.
+1. Create a developer account at <https://developer.riotgames.com/> and obtain a Riot Developer API key. A development key deactivates after 24 hours; register this personal app for a longer-lived personal key if eligible.
+2. On your Windows computer, install Node.js 22+, then run `npm install` and `npm start` in the project directory.
+3. Go to **Capture Studio → Match Sync**, choose **Personal desktop API key**, enter your full Riot ID (`GameName#Tag`), your LoL platform (EUW/EUNE/etc), and paste your Riot Developer API key.
+4. Click **Find my profile**. The app queries the Riot Account API for your PUUID and, when available, retrieves your summoner level, icon and Solo/Duo rank. Confirm that the displayed profile is yours.
+5. Click **Save & enable sync**. The Windows companion encrypts the key using Electron `safeStorage` and stores it locally. It polls recent completed matches every three minutes while the desktop app is running and paginates older matches gradually. **All eligible LoL match roles are archived**; ADC performance analysis is filtered to bottom-lane marksmen games, excluding off-role samples.
+6. Open **Performance Insights** for ADC statistics, recent-vs-previous trend summaries, champion samples and 45-metric evidence coverage. Use **Sync now** and **Backfill history** if necessary.
 
-The desktop stores your private proxy bearer token encrypted using Electron's OS `safeStorage` (Windows DPAPI). It refuses persistent configuration if OS encryption is unavailable. The renderer never receives the persisted token. This is **not** Riot Sign On, and it does not ask for or store your Riot password. Auto-sync requires a deployed Worker and valid credentials; merely cloning the repository cannot activate it.
+**Advanced proxy mode:** To avoid keeping your Riot API key on the PC, the existing Cloudflare Worker remains available. Configure `worker/wrangler.toml.example`, set `RIOT_API_KEY` and `ADC_ACCESS_TOKEN` as Worker secrets, deploy using Wrangler, then choose **Cloudflare proxy** in Capture Studio and enter the Worker URL and access token. The proxy also returns all played roles while marking ADC eligibility.
+
+**Credential safeguards:** The personal key is sent only from Electron's main process to official `*.api.riotgames.com` hosts over HTTPS, never embedded in the page, local backups or GitHub. The locally encrypted key is never returned to the renderer. Disconnect in the app to delete it. This does **not** require your Riot password or Riot Sign On. It does require a valid API key and a network connection. No real user match history can be retrieved without these.
 
 **Scope and evidence integrity:** Riot `skillshotsDodged`, CS/min, damage/min, gold/min, vision score/min, deaths/10min, and lane checkpoints are genuine post-game indicators when available, **not** measurements of dodge success rate, correct spacing, wave decisions, or all 45 tactical skills. The 45-metric table indicates measured / not reported / VOD-required and does **not** fabricate grades, confidence, or verified F → Monarch certifications. No API exists that automatically and reliably certifies all 45 skills. Some visual mechanics can be analyzed from user-recorded video, but require better validated models and proper player context.
 
@@ -68,7 +71,7 @@ Open **Capture Studio** while a League match is running. Choose optional system 
 - For teamfight **clip extraction**, install [FFmpeg](https://ffmpeg.org/download.html) and add `ffmpeg` to PATH. The heuristic markers use champion kills within 25 seconds and ~2800 game units; fights without several kills can be missed, and multikills may be false positives.
 - Recordings are **WebM**; for Windows installers use the GitHub Actions **Package Windows Recorder** workflow on a repository containing this source. It produces an NSIS installer / portable EXE (not pre-built in this ZIP).
 
-## Automatic Riot match sync (optional)
+## Alternative Riot match sync through Cloudflare (optional)
 
 1. Create a Riot Developer Portal app, review current Riot requirements, and obtain API credentials appropriate for your use case.
 2. In `worker/`, copy `wrangler.toml.example` to `wrangler.toml`.

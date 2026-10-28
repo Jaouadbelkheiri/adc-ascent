@@ -12,4 +12,4 @@ jobs:
         with:
           node-version: '22'
       - run: npm test
-      - run: node --check app.js && node --check capture-ui.js && node --check desktop/main.js && node --check desktop/riot-sync.js && node --check match-intelligence.js && node --check intelligence-ui.js && node --check worker/riot-proxy.js
+      - run: node --check app.js && node --check capture-ui.js && node --check desktop/main.js && node --check desktop/riot-sync.js && node --check desktop/riot-direct.js && node --check match-intelligence.js && node --check intelligence-ui.js && node --check worker/riot-proxy.js

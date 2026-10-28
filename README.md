@@ -1,3 +1,17 @@
+# ADC ASCENT v0.7 — Unified Analytics Hub
+
+The default **Analytics Hub** now unifies player profile, match history, champion performance, game-by-game trends, recent-versus-previous comparisons, personal build snapshots, and automatic evidence coverage. It is independently implemented from Riot match data and local records. It does **not** scrape proprietary OP.GG, U.GG, Mobalytics, DeepLoL or League of Graphs metrics, nor does it claim their proprietary ratings.
+
+**New pages:** Analytics Hub (default) and existing Training Command, Skill Tree, Champion Forge, Training Plan, Match History, Capture Studio, Mechanics Lab, VOD Review Lab and Performance Insights.
+
+**Data:** The Windows companion can discover a player's PUUID from Riot ID and backfill match history with a personal API key. Future imports preserve available participant gold, damage, vision, item snapshots, runes and kill participation. Older imported matches may have fewer fields until reimported. Benchmarks are only against the player's own imported games. Build snapshots are *final inventories*, not item order or best meta builds.
+
+**Reliability:** Recent versus previous comparisons require at least 5 games in each sample. Missing data display as dashes, not zero scores. Riot statistical signals remain distinct from verified mastery evidence. This is a post-game coaching application, not an official Riot product or replacement for OP.GG, U.GG, DeepLoL, League of Graphs or Mobalytics.
+
+Run `npm install && npm start` for the Windows desktop application. For the local web UI, run `npm run web`; match auto-sync requires Electron and a valid Riot API key.
+
+---
+
 # ADC ASCENT — Standalone ADC Training & Replay Studio (v0.6)
 
 Independent **personal** League of Legends ADC development app. Not integrated with ARISE, not affiliated with Riot Games, and not a clone of Replay.gg or Mobalytics.
